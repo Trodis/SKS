@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 from bs4 import BeautifulSoup
@@ -46,18 +47,37 @@ def request_events(location, payload=None):
     else:
         return requests.get(url, params=payload)
 
+def request_concertpage(concert_link):
+    url = "https://songkick.com%s" %concert_link
+    concert_page = requests.get(url)
+    return concert_page
+
+def parse_concertpage(concert_page, artist_name):
+    bs_obj = BeautifulSoup(concert_page.text, "lxml")
+    tickets_table = bs_obj.find('div', id='tickets')
+    tickets_list = []
+    for tickets in tickets_table.find_all('div', class_='ticket-wrapper'):
+        for cell in tickets.find_all('div'):
+            print artist_name
+            print cell
+        
+        print "******************"
+
 def parse_events(event_page):
     bs_obj = BeautifulSoup(event_page, "lxml")
     event_listings = bs_obj.find('ul', class_='event-listings ').find_all('li', class_=False)
     for event in event_listings:
-        artist_name = event.span.strong
-        link = event.a['href']
-        print artist_name
-        print link
+        if event.span.strong and event.a['href']:
+            artist_name = event.span.strong
+            link = event.a['href']
+            concert_page = request_concertpage(link)
+            parse_concertpage(concert_page, artist_name)
+        else:
+            continue
 
 def main():
     location_entered_by_user = raw_input("Pleaser enter location: ")
-    location_entered_by_user = location_entered_by_user.encode('utf-8')
+    location_entered_by_user = location_entered_by_user.decode('utf-8')
     location_html = request_location(location_entered_by_user).text
     locations = parse_foundlocations(location_html)
     selected_location = choose_locations(locations)
@@ -65,8 +85,5 @@ def main():
     parse_events(event_page.text)
     
 
-
-     
-     
 if __name__ == '__main__':
     main()
